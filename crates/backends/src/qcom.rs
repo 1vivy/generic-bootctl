@@ -1,6 +1,6 @@
 //! QTI attribute byte 54, type-GUID activation swap, both GPT copies on every LU.
 use crate::{crc32, invalid, misc};
-use generic_bootctl_core::{Backend, Merge, Operation, Slot, State};
+use generic_bootctl_core::{Backend, HealthOnSuccess, Merge, Operation, Slot, State};
 use std::{
     collections::BTreeMap,
     fs::{self, File},
@@ -285,6 +285,10 @@ impl Qcom {
     }
 }
 impl Backend for Qcom {
+    fn slot_count(&self) -> u32 {
+        // Construction validates the mandatory A/B boot pair.
+        2
+    }
     fn read_state(&mut self) -> io::Result<State> {
         self.reload()?;
         let pair = self.pairs()?["boot"];
@@ -306,6 +310,7 @@ impl Backend for Qcom {
             max_tries: 1,
             clear_successful_on_activate: true,
             successful_requires_bootable: false,
+            health_on_success: HealthOnSuccess::ResetToOne,
         })
     }
     fn commit(&mut self, _: &State, operation: Operation) -> io::Result<()> {

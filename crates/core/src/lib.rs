@@ -18,6 +18,13 @@ impl Slot {
         self.tries != 0
     }
 }
+/// Native metadata policy when the current slot is marked successful.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum HealthOnSuccess {
+    #[default]
+    ResetToOne,
+    PreserveNonZero,
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct State {
     pub slots: Vec<Slot>,
@@ -25,6 +32,7 @@ pub struct State {
     pub max_tries: u8,
     pub clear_successful_on_activate: bool,
     pub successful_requires_bootable: bool,
+    pub health_on_success: HealthOnSuccess,
 }
 impl State {
     pub fn active(&self, current: u32) -> Option<u32> {
@@ -86,6 +94,13 @@ pub enum Operation {
 /// `commit` receives the entire validated next state and the operation for native
 /// storage side effects (notably the UFS boot-LUN selection on SetActive).
 pub trait Backend: Send {
+    /// Immutable slot count discovered at construction; must not access storage.
+    fn slot_count(&self) -> u32;
+    /// Prepare state-dependent operations, never metadata/count/suffix queries.
+    /// Implementations must retain the read-only guarantee of read operations.
+    fn prepare(&mut self) -> io::Result<()> {
+        Ok(())
+    }
     fn read_state(&mut self) -> io::Result<State>;
     fn commit(&mut self, state: &State, operation: Operation) -> io::Result<()>;
     fn read_merge(&mut self) -> io::Result<Merge>;
@@ -123,7 +138,11 @@ impl Service {
         self.current
     }
     pub fn number_slots(&mut self) -> Result<u32, i32> {
-        Ok(self.state()?.slots.len() as u32)
+        let count = self.backend.slot_count();
+        if !(1..=4).contains(&count) || self.current >= count {
+            return Err(COMMAND_FAILED);
+        }
+        Ok(count)
     }
     pub fn suffix(&mut self, slot: u32) -> Result<&'static CStr, i32> {
         if slot >= self.number_slots()? {
@@ -144,6 +163,7 @@ impl Service {
         Ok(self.slot(slot)?.bootable())
     }
     pub fn is_successful(&mut self, slot: u32) -> Result<bool, i32> {
+        self.validate_slot(slot)?;
         let state = self.state()?;
         let s = state.slots.get(slot as usize).ok_or(INVALID_SLOT)?;
         Ok(s.successful && (!state.successful_requires_bootable || s.bootable()))
@@ -158,6 +178,7 @@ impl Service {
         self.mutate(Operation::SetUnbootable(slot))
     }
     pub fn merge_status(&mut self) -> Result<MergeStatus, i32> {
+        self.backend.prepare().map_err(|_| COMMAND_FAILED)?;
         Ok(self
             .backend
             .read_merge()
@@ -166,6 +187,7 @@ impl Service {
     }
     pub fn set_merge_status(&mut self, status: MergeStatus) -> Result<(), i32> {
         self.allow_write()?;
+        self.backend.prepare().map_err(|_| COMMAND_FAILED)?;
         self.backend
             .write_merge(Merge {
                 status,
@@ -205,9 +227,9 @@ impl Service {
         }
     }
     fn state(&mut self) -> Result<State, i32> {
+        self.backend.prepare().map_err(|_| COMMAND_FAILED)?;
         let s = self.backend.read_state().map_err(|_| COMMAND_FAILED)?;
-        if s.slots.is_empty()
-            || s.slots.len() > 4
+        if s.slots.len() != self.number_slots()? as usize
             || self.current as usize >= s.slots.len()
             || s.max_priority == 0
         {
@@ -216,11 +238,19 @@ impl Service {
         Ok(s)
     }
     fn slot(&mut self, slot: u32) -> Result<Slot, i32> {
+        self.validate_slot(slot)?;
         self.state()?
             .slots
             .get(slot as usize)
             .copied()
             .ok_or(INVALID_SLOT)
+    }
+    fn validate_slot(&self, slot: u32) -> Result<(), i32> {
+        if slot >= self.backend.slot_count() {
+            Err(INVALID_SLOT)
+        } else {
+            Ok(())
+        }
     }
     fn allow_write(&self) -> Result<(), i32> {
         if (self.gate)() {
@@ -230,20 +260,24 @@ impl Service {
         }
     }
     fn mutate(&mut self, op: Operation) -> Result<(), i32> {
-        let mut state = self.state()?;
         let index = match op {
             Operation::MarkSuccessful(s)
             | Operation::SetActive(s)
             | Operation::SetUnbootable(s) => s as usize,
         };
-        if index >= state.slots.len() {
-            return Err(INVALID_SLOT);
-        }
+        self.validate_slot(index as u32)?;
+        let mut state = self.state()?;
         self.allow_write()?;
         match op {
             Operation::MarkSuccessful(_) => {
                 state.slots[index].successful = true;
-                state.slots[index].tries = 1;
+                match state.health_on_success {
+                    HealthOnSuccess::ResetToOne => state.slots[index].tries = 1,
+                    HealthOnSuccess::PreserveNonZero => {
+                        state.slots[index].tries = state.slots[index].tries.max(1);
+                        state.slots[index].priority = state.slots[index].priority.max(1);
+                    }
+                }
             }
             Operation::SetActive(_) => {
                 for s in &mut state.slots {

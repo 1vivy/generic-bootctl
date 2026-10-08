@@ -95,5 +95,5 @@ pub fn discover(root: &Path) -> io::Result<Box<dyn Backend>> {
     Ok(Box::new(vendor::Vendor::new(
         libraries.remove(0),
         misc_path,
-    )))
+    )?))
 }

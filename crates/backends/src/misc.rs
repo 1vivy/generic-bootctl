@@ -1,6 +1,6 @@
 //! AOSP bootloader_control at misc+2048; never auto-initialize damaged metadata.
 use crate::{crc32, invalid};
-use generic_bootctl_core::{Backend, Merge, MergeStatus, Operation, Slot, State};
+use generic_bootctl_core::{Backend, HealthOnSuccess, Merge, MergeStatus, Operation, Slot, State};
 use std::{
     fs::{File, OpenOptions},
     io,
@@ -12,11 +12,15 @@ pub const MERGE_OFFSET: u64 = 32768;
 #[derive(Clone)]
 pub struct Misc {
     path: PathBuf,
+    slots: u32,
 }
 impl Misc {
     pub fn open(path: &Path) -> io::Result<Self> {
-        let this = Self { path: path.into() };
-        this.control()?;
+        let mut this = Self {
+            path: path.into(),
+            slots: 0,
+        };
+        this.slots = u32::from(this.control()?[9] & 7);
         Ok(this)
     }
     fn control(&self) -> io::Result<[u8; 32]> {
@@ -68,6 +72,9 @@ pub fn write_merge(path: &Path, merge: Merge) -> io::Result<()> {
     write_verified(path, MERGE_OFFSET, &b)
 }
 impl Backend for Misc {
+    fn slot_count(&self) -> u32 {
+        self.slots
+    }
     fn read_state(&mut self) -> io::Result<State> {
         let b = self.control()?;
         let slots = (0..usize::from(b[9] & 7))
@@ -87,6 +94,7 @@ impl Backend for Misc {
             max_tries: 6,
             clear_successful_on_activate: false,
             successful_requires_bootable: true,
+            health_on_success: HealthOnSuccess::ResetToOne,
         })
     }
     fn commit(&mut self, state: &State, _: Operation) -> io::Result<()> {

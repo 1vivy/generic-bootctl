@@ -1,6 +1,6 @@
 //! Legacy vendor reads run in a fresh fail-closed Landlock+seccomp process.
 use crate::{abi::BootModule, invalid, misc};
-use generic_bootctl_core::{Backend, Merge, Operation, Slot, State};
+use generic_bootctl_core::{Backend, HealthOnSuccess, Merge, Operation, Slot, State};
 use std::{
     ffi::{CStr, CString, c_char, c_int, c_long, c_void},
     io,
@@ -10,13 +10,23 @@ use std::{
 pub struct Vendor {
     library: PathBuf,
     misc: PathBuf,
+    slots: u32,
 }
 impl Vendor {
-    pub fn new(library: PathBuf, misc: PathBuf) -> Self {
-        Self { library, misc }
+    pub fn new(library: PathBuf, misc: PathBuf) -> io::Result<Self> {
+        let mut this = Self {
+            library,
+            misc,
+            slots: 0,
+        };
+        this.slots = this.read_state()?.slots.len() as u32;
+        Ok(this)
     }
 }
 impl Backend for Vendor {
+    fn slot_count(&self) -> u32 {
+        self.slots
+    }
     fn read_state(&mut self) -> io::Result<State> {
         let output = Command::new("/data/adb/modules/generic_bootctl/impl/bootctl-unified")
             .arg("--vendor-probe")
@@ -60,6 +70,7 @@ impl Backend for Vendor {
             max_tries: 1,
             clear_successful_on_activate: false,
             successful_requires_bootable: false,
+            health_on_success: HealthOnSuccess::ResetToOne,
         })
     }
     fn commit(&mut self, _: &State, _: Operation) -> io::Result<()> {

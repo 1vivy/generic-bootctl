@@ -11,10 +11,15 @@ transactions use one Mutex; the property gate is evaluated on every mutation.
 Its Rust `HAL_MODULE_INFO_SYM` static is exported as **HMI**, exactly as hardware.h
 requires. It does not export a second, nonstandard alias.
 
-`core::Backend: Send` has `read_state`, `commit(&State, Operation)`, `read_merge`,
+`core::Backend: Send` has cached `slot_count(&self) -> u32`, a default no-op
+`prepare(&mut self)`, `read_state`, `commit(&State, Operation)`, `read_merge`,
 and `write_merge`. State contains normalized slot metadata and native-policy
-parameters: maximum priority/tries, successful-bit clearing on activation, and
-whether successful queries require bootability. QTI encodes bootability as the
+parameters: maximum priority/tries, successful-bit clearing on activation,
+whether successful queries require bootability, and `health_on_success`.
+`HealthOnSuccess::ResetToOne` is the default: successful writes set tries=1
+and preserve priority. All native backends use it. Consumers may select
+`PreserveNonZero` to set successful=true while retaining nonzero tries/priority
+and raising either zero field to 1. QTI encodes bootability as the
 inverse unbootable bit and active selection as normalized priority 2 versus 1;
 its native commit uses Operation to preserve fields the QTI HAL leaves alone.
 AOSP misc uses native 4-bit priorities and 3-bit retry counters.
@@ -28,6 +33,15 @@ static CStr, including the empty string for invalid slots. Invalid slot queries
 and mutators return -1; backend/gate failures return -2. HIDL owns its own wire
 error mapping and must serialize shared Service access; do not bypass the gate.
 `execute` is specifically the frozen AIDL V1 dispatch, not a HIDL transaction ABI.
+
+Count/suffix queries use only the immutable count cached when a backend is opened
+or probed (QTI validates exactly two slots). Invalid slots in both boolean queries
+and both slot setters return INVALID_SLOT **before** preparation or state reads.
+`prepare` precedes each valid state-dependent operation, including merge reads and
+writes (AIDL codes 1,4,6,7,8,9,10,11), but never current-slot/count/suffix or
+interface metadata queries (2,3,5,16777214,16777215). Write refusal may return before
+preparation. Preparation must preserve read-only guarantees; it does not bypass
+the write gate. A state read whose slot count differs from the cached count fails.
 
 The XML reader accepts ordinary manifest elements, attributes, comments and XML
 processing instructions, but no DTD/entities, overrides, custom instances or

@@ -207,3 +207,25 @@ fn qti_refuses_disagreeing_copies_without_repair() {
     );
     assert_eq!(fs::read(p).unwrap(), b);
 }
+
+#[test]
+fn discovered_misc_count_and_suffix_survive_storage_loss() {
+    let t = Temp::new("cached-count");
+    let p = t.0.join("misc");
+    fs::write(&p, misc_image()).unwrap();
+    let backend = Misc::open(&p).unwrap();
+    assert_eq!(backend.slot_count(), 2);
+    fs::remove_file(&p).unwrap();
+    let mut service = Service::new(Box::new(backend), 0, Box::new(|| false));
+    assert_eq!(service.number_slots(), Ok(2));
+    assert_eq!(service.suffix(1), Ok(c"_b"));
+    assert_eq!(service.suffix(2), Ok(c""));
+    assert_eq!(
+        service.is_bootable(2),
+        Err(generic_bootctl_core::INVALID_SLOT)
+    );
+    assert_eq!(
+        service.is_bootable(0),
+        Err(generic_bootctl_core::COMMAND_FAILED)
+    );
+}
