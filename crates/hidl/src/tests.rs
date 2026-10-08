@@ -242,7 +242,12 @@ fn base_methods_and_bad_dispatch() {
         }
     }
     assert_eq!(dispatch(&s, 2, 99, 0, &[]).unwrap_err(), -74);
-    assert_eq!(dispatch(&s, 2, 1, 0, b"bad\0").unwrap_err(), -1);
+    assert_eq!(dispatch(&s, 2, 1, 0, b"bad\0").unwrap_err(), i32::MIN + 1);
+    assert_eq!(
+        dispatch(&s, 2, 1, 0, b"unterminated").unwrap_err(),
+        i32::MIN + 1
+    );
+    assert_eq!(dispatch(&s, 2, 1, 0, &[]).unwrap_err(), i32::MIN + 1);
     assert_eq!(dispatch(&s, 2, 4, 0, &request(1, 0).data).unwrap_err(), -22);
     assert_eq!(dispatch(&s, 0, 9, 0, &request(9, 0).data).unwrap_err(), -74);
     assert_eq!(dispatch(&s, 2, 1, 1, &request(1, 0).data).unwrap_err(), -22);

@@ -93,9 +93,11 @@ impl Parcel {
     }
 }
 pub fn input(data: &[u8], token: &str, argument: bool) -> Result<i32, i32> {
-    let end = data.iter().position(|v| *v == 0).ok_or(-22)?;
+    // Generated BnHw stubs return BAD_TYPE when enforceInterface fails,
+    // including an absent/unterminated token, not PERMISSION_DENIED.
+    let end = data.iter().position(|v| *v == 0).ok_or(i32::MIN + 1)?;
     if &data[..end] != token.as_bytes() {
-        return Err(-1);
+        return Err(i32::MIN + 1);
     }
     let start = (end + 1).next_multiple_of(4);
     if argument {

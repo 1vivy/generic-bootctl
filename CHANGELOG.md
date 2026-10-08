@@ -15,3 +15,5 @@
 - Extend the shared core for consumers with cached slot count, invalid-slot
   precedence, a preparation hook and explicit mark-successful health policy;
   existing native backend health policy remains unchanged.
+- Match generated AOSP BnHw BAD_TYPE status for incorrect, absent and
+  unterminated interface tokens.

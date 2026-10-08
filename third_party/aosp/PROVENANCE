@@ -34,3 +34,6 @@ third_party/aosp/system/tools/hidl/Interface.cpp | aed54501bd16136bc4f20e727ba76
 third_party/aosp/system/libhidl/base/HidlSupport.cpp | 69123db938e2d4b7d129e8d7bedbfdb98ec6e5b8 | a57476d1d05e9e6230795e1866e4d938dc8529b918f7b4d99c6baaa995178300
 third_party/aosp/system/libhidl/transport/HidlTransportSupport.cpp | 69123db938e2d4b7d129e8d7bedbfdb98ec6e5b8 | 8acbd0ea1d668d84a72cf452c5b4aa5d09dede64b9f850c069c627ae9d2ed5f0
 third_party/aosp/system/libhwbinder/include/hwbinder/IBinder.h | 45db897b21385e9db4f6d1a0af6573ca649bc88b | 8d87cf3ffbbe62bda7f6c747c7c757062eb38674486e169e983a2984b018b3d2
+# Minimal uncompiled excerpt of generateStaticStubMethodSource; upstream
+# generateCpp.cpp SHA256 2ea8e1da5a1b45c1e6ec63ddb31f3be634a4c71cd2752e53b3fcb8414e703d36.
+third_party/aosp/system/tools/hidl/generateCpp-dispatch.cpp | aed54501bd16136bc4f20e727ba76d95080102f1 | dcbd0aff5d11d927c3f0ea32adfa2caa490930e6765db7df51e1af6ec558e425

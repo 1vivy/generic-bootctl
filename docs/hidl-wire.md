@@ -96,3 +96,8 @@ hwservicemanager, reboot, OTA or bootloader correctness. The same-path installer
 still refuses custom instances, unsupported versions/transports, manifest
 merging constructs it cannot resolve, ambiguous/critical init services and all
 other documented safety conditions.
+
+Generated BnHw stubs reject failed `enforceInterface` with `BAD_TYPE`
+(`INT32_MIN+1`), including missing or unterminated interface tokens. The minimal
+`generateCpp-dispatch.cpp` reference excerpt and golden dispatcher tests pin that
+status separately from `PERMISSION_DENIED` used for app-UID debug refusal.
