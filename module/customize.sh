@@ -1,5 +1,6 @@
 #!/system/bin/sh
 # KernelSU sources this file; no partitions or properties are modified here.
+# shellcheck disable=SC2034 # read by the KernelSU installer after sourcing
 SKIPUNZIP=0
 ROOT=${GENERIC_BOOTCTL_TEST_ROOT:-/}
 fail() { abort "generic_bootctl: $*"; exit 1; }
