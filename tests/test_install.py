@@ -9,6 +9,7 @@ import unittest
 REPO = Path(__file__).resolve().parents[1]
 BINARY = REPO / "target/debug/bootctl-unified"
 AIDL = '<manifest><hal format="aidl"><name>android.hardware.boot</name><version>1</version><fqname>IBootControl/default</fqname></hal></manifest>'
+HIDL = '<manifest><hal format="hidl"><name>android.hardware.boot</name><transport>hwbinder</transport><fqname>@1.2::IBootControl/default</fqname></hal></manifest>'
 
 
 class Install(unittest.TestCase):
@@ -46,7 +47,7 @@ class Install(unittest.TestCase):
         cases = [
             dict(manifest="<manifest/>"),
             dict(manifest=AIDL.replace("<version>1", "<version>2")),
-            dict(manifest='<manifest><hal format="hidl"><name>android.hardware.boot</name><transport>hwbinder</transport><fqname>@1.2::IBootControl/default</fqname></hal></manifest>'),
+            dict(manifest=HIDL.replace("@1.2", "@1.3")),
             dict(critical=True), dict(successful=False), dict(writable=True),
         ]
         for case in cases:
@@ -57,10 +58,12 @@ class Install(unittest.TestCase):
                 self.assertFalse(backup)
 
     def test_same_path_without_name_guessing(self):
-        result, overlay, backup = self.run_install()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertTrue(overlay)
-        self.assertTrue(backup)
+        for manifest in [AIDL, HIDL, AIDL.replace("</manifest>", HIDL.removeprefix("<manifest>"))]:
+            with self.subTest(manifest=manifest):
+                result, overlay, backup = self.run_install(manifest=manifest)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertTrue(overlay)
+                self.assertTrue(backup)
 
 
 if __name__ == "__main__":

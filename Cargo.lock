@@ -9,6 +9,7 @@ dependencies = [
  "generic-bootctl-aidl",
  "generic-bootctl-backends",
  "generic-bootctl-core",
+ "generic-bootctl-hidl",
 ]
 
 [[package]]
@@ -28,6 +29,13 @@ dependencies = [
 [[package]]
 name = "generic-bootctl-core"
 version = "0.1.0"
+
+[[package]]
+name = "generic-bootctl-hidl"
+version = "0.1.0"
+dependencies = [
+ "generic-bootctl-core",
+]
 
 [[package]]
 name = "generic-bootctl-legacy"

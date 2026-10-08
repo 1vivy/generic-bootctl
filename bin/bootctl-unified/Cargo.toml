@@ -10,3 +10,4 @@ workspace = true
 generic-bootctl-core = { path = "../../crates/core" }
 generic-bootctl-aidl = { path = "../../crates/aidl" }
 generic-bootctl-backends = { path = "../../crates/backends" }
+generic-bootctl-hidl = { path = "../../crates/hidl" }

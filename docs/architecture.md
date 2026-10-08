@@ -3,10 +3,12 @@
 **Status (2026-10-07)** — Implemented, host/image-testable; not device-qualified.
 
 `bootctl-unified` parses manifests before registration, discovers the backend,
-constructs `core::Service`, then registers only AIDL V1/default using the NDK C ABI.
-The frozen transaction order/hash come from the imported AIDL snapshot. Metadata
-transactions use one Mutex; the property gate is evaluated on every mutation.
-`crates/aidl` serializes replies and maps -1 INVALID_SLOT / -2 COMMAND_FAILED.
+constructs one `core::Service`, then registers AIDL V1/default and/or the highest
+declared HIDL 1.0–1.2/default. AIDL uses the NDK C ABI; HIDL uses raw hwbinder
+ioctls and scatter-gather parcels. The transports share one Arc/Mutex; the property
+gate is evaluated on every mutation. A transport failure exits the whole process.
+`crates/aidl` serializes replies and maps -1 INVALID_SLOT / -2 COMMAND_FAILED;
+`crates/hidl` maps these onto CommandResult/BoolResult without bypassing core.
 `crates/legacy` uses the identical service and translates these errors to errno.
 Its Rust `HAL_MODULE_INFO_SYM` static is exported as **HMI**, exactly as hardware.h
 requires. It does not export a second, nonstandard alias.
@@ -24,7 +26,7 @@ inverse unbootable bit and active selection as normalized priority 2 versus 1;
 its native commit uses Operation to preserve fields the QTI HAL leaves alone.
 AOSP misc uses native 4-bit priorities and 3-bit retry counters.
 
-The public `Service` methods are the contract for the HIDL follow-up:
+The public `Service` methods are the shared transport contract:
 `new(Box<dyn Backend>, current: u32, Box<dyn Fn() -> bool + Send>)`, `current_slot`,
 `number_slots`, `suffix`, `active_slot`, `is_bootable`, `is_successful`,
 `mark_successful`, `set_active`, `set_unbootable`, `merge_status`, and
@@ -46,8 +48,10 @@ the write gate. A state read whose slot count differs from the cached count fail
 The XML reader accepts ordinary manifest elements, attributes, comments and XML
 processing instructions, but no DTD/entities, overrides, custom instances or
 unsupported versions. It does not pretend to replace libvintf's full merge rules.
-Those unsupported constructs fail closed. HIDL declarations are detected for
-installation rejection; no HIDL service is registered in this release.
+Those unsupported constructs fail closed. Both transports register non-lazily
+and only when declared. HIDL inherits older minors in interfaceChain; its
+registration handles hwservicemanager's reentrant interfaceChain transaction.
+See [HIDL wire derivation](hidl-wire.md) for the driver and marshalling contracts.
 
 Installer discovery is exposed as `--install-plan ROOT` for host fake-root tests.
 It reads the service stanza associated with the boot interface, not the first

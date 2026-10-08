@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/core", "crates/aidl", "crates/legacy", "crates/backends", "bin/bootctl-unified"]
+members = ["crates/core", "crates/aidl", "crates/hidl", "crates/legacy", "crates/backends", "bin/bootctl-unified"]
 resolver = "3"
 
 [workspace.package]

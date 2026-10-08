@@ -4,12 +4,7 @@ fn error(s: &str) -> io::Error {
     io::Error::other(s)
 }
 fn install_plan(root: &Path) -> io::Result<()> {
-    let d = vintf::discover(root)?;
-    if !d.aidl || d.hidl.is_some() {
-        return Err(error(
-            "HIDL transport is not shipped yet; refusing HIDL-only or mixed declarations",
-        ));
-    }
+    vintf::discover(root)?;
     let mut paths = Vec::new();
     for part in ["vendor", "odm", "system", "system_ext", "product"] {
         vintf::files(&root.join(part).join("etc/init"), "rc", &mut paths)?;
@@ -123,14 +118,31 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if args.len() != 1 {
         return Err("unexpected arguments".into());
     }
-    let d = vintf::discover(Path::new("/"))?;
-    if !d.aidl || d.hidl.is_some() {
-        return Err("HIDL transport is not shipped yet".into());
-    }
+    let declaration = vintf::discover(Path::new("/"))?;
     #[cfg(target_os = "android")]
-    generic_bootctl_aidl::run(generic_bootctl_backends::service()?).map_err(io::Error::other)?;
+    {
+        let service =
+            std::sync::Arc::new(std::sync::Mutex::new(generic_bootctl_backends::service()?));
+        if let Some(minor) = declaration.hidl {
+            if declaration.aidl {
+                let shared = std::sync::Arc::clone(&service);
+                std::thread::spawn(move || {
+                    if let Err(e) = generic_bootctl_hidl::run(shared, minor) {
+                        eprintln!("generic-bootctl: HIDL transport failed: {e}");
+                        std::process::exit(1);
+                    }
+                });
+            } else {
+                return generic_bootctl_hidl::run(service, minor).map_err(Into::into);
+            }
+        }
+        generic_bootctl_aidl::run(service).map_err(io::Error::other)?;
+    }
     #[cfg(not(target_os = "android"))]
-    return Err("service transport requires Android".into());
+    {
+        let _ = declaration;
+        Err("service transport requires Android".into())
+    }
     #[cfg(target_os = "android")]
     Ok(())
 }

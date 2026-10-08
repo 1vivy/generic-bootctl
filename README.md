@@ -1,9 +1,8 @@
 # generic-bootctl
 
 **Status (2026-10-07)** — Rust KernelSU same-path boot-control HAL. AIDL frozen V1,
-LP64 legacy module ABI, AOSP misc, QTI UFS GPT, and sandboxed vendor parity are
-implemented. No device boot/OTA validation is claimed. HIDL transport is not part
-of this release: HIDL-only and mixed AIDL/HIDL installations are refused.
+raw hwbinder HIDL 1.0–1.2, LP64 legacy module ABI, AOSP misc, QTI UFS GPT, and
+sandboxed vendor parity are implemented. No device boot/OTA validation is claimed.
 
 A boot HAL is an interface, not a storage format. The bootloader must interpret
 exactly the metadata this HAL changes. This is experimental boot-critical storage
@@ -15,8 +14,8 @@ software, not a universal device compatibility promise.
 | --- | --- | --- |
 | Replacement | Original executable and discovered LP64 bootctrl libraries, same-path KernelSU overlay | Keep existing rc, VINTF, instance and domain |
 | Binaries | One `bootctl-unified` executable per CPU ABI plus `bootctrl.module.so` | Different executable/module ABIs, one shared core |
-| Transport | Manifest-declared AIDL V1 `IBootControl/default` only | No AIDL V2 exists; no undeclared registration |
-| Lifecycle | Non-lazy NDK Binder registration | Avoid lazy/non-oneshot restart loops |
+| Transport | Manifest-declared AIDL V1 and/or HIDL 1.0–1.2, default instance | No AIDL V2 exists; no undeclared registration |
+| Lifecycle | Non-lazy Binder and hwservicemanager registration | Avoid lazy/non-oneshot restart loops |
 | Own rc/manifest/policy | None; empty `sepolicy.rule` | No extra registration or permissive domain |
 | Writes | Exact `persist.generic_bootctl.rw=1`, checked per mutation | Default read-only; no read-time initialization/repair |
 | Backend | Runtime metadata/controller discovery; reject ambiguity | No model-name allow-lists |
@@ -27,7 +26,7 @@ software, not a universal device compatibility promise.
 | --- | --- |
 | Android CPU | aarch64, x86_64; API 35 build baseline; NDK r29 |
 | AIDL | Frozen V1, default instance, normal registration |
-| HIDL 1.0–1.2 | Interface sources imported only; installer refuses it |
+| HIDL 1.0–1.2 | Raw `/dev/hwbinder`; highest declared minor, default instance, inherited IBase contract |
 | Legacy | LP64 `boot_control_module_t`, `HMI` export (`HAL_MODULE_INFO_SYM` macro) |
 | AOSP misc | Valid v1 32-byte control block, 1–4 slots, CRC checked; existing VAB v2 message |
 | Qualcomm | UFS QTI attribute layout (bits 48–55), both GPT copies on all discovered controller LUs, type-GUID swap, BSG boot-LUN switch/readback |
@@ -44,17 +43,24 @@ run without confinement on kernels lacking Landlock.
 ```sh
 export PATH="$HOME/.cargo/bin:$PATH"
 cargo test --locked
+cargo fmt --check
 cargo clippy --locked --workspace --all-targets -- -D warnings
 cargo build --locked -p bootctl-unified
 python3 -m unittest discover -s tests
 # ANDROID_NDK_HOME or GENERIC_BOOTCTL_NDK overrides the documented local default.
 bash scripts/build.sh
+bash scripts/check-abi.sh
 ```
 
 The module zip is `out/generic-bootctl-0.1.0.zip`; it includes both architectures.
 `rust-toolchain.toml` pins nightly-2026-08-08. There are no crates.io dependencies,
 no platform AOSP build requirement, and no `.cargo/config.toml`. CI runs host
 contracts and cross-builds with the downloadable r29 NDK.
+
+HIDL uses the kernel Binder LP64 ABI directly, with AOSP scatter-gather parcel
+buffer fixups; no `libhidlbase` or `libhwbinder` is linked or bundled. In a mixed
+manifest both transports share one serialized `Service`, including its live
+write gate. See [wire contract and golden-byte derivation](docs/hidl-wire.md).
 
 ## Installation and staged rollout
 

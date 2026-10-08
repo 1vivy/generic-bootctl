@@ -45,6 +45,9 @@ independently recomputed CRCs. UFS sg_io_v4 is transcribed from NDK r29's
 linux/bsg.h; request/reply bytes follow the pinned QTI recovery-ufs-bsg source and
 NDK scsi/scsi_bsg_ufs.h. Its size is compile-time asserted at 160 bytes.
 
-Adding HIDL later must implement a real hwbinder transport against these imported
-interfaces and the shared core, not link nonexistent NDK libraries or register a
-fake service. The imported `.hal` sources are contracts, not a shipped transport.
+`hidl/parcel.rs` and `hidl/driver.rs` transcribe the LP64 kernel Binder ABI and
+libhwbinder encoding, not generated C++ bindings. Minimal transport references
+from `system/libhwbinder@45db897b21385e9db4f6d1a0af6573ca649bc88b` and
+`system/libhidl@69123db938e2d4b7d129e8d7bedbfdb98ec6e5b8` remain reference-only.
+Imported `current.txt` files pin each boot and IBase hash. See
+[wire derivation](hidl-wire.md); no private platform HIDL library is linked.

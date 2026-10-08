@@ -16,6 +16,8 @@ esac
 cp "$MODPATH/impl/$ARCH/bootctl-unified" "$MODPATH/impl/bootctl-unified" || fail "payload copy failed"
 cp "$MODPATH/impl/$ARCH/bootctrl.module.so" "$MODPATH/impl/bootctrl.module.so" || fail "legacy payload copy failed"
 chmod 0755 "$MODPATH/impl/bootctl-unified" || fail "payload chmod failed"
+# The plan admits manifest-declared AIDL, HIDL 1.0–1.2 or both; all other
+# discovery and boot-safety refusals remain enforced before creating overlays.
 "$MODPATH/impl/bootctl-unified" --install-plan "$ROOT" > "$MODPATH/install.plan" || fail "manifest/rc discovery refused installation"
 CUR=$(bootctl get-current-slot) || fail "cannot query stock current slot"
 case "$CUR" in 0|1|2|3) ;; *) fail "invalid stock current slot" ;; esac
