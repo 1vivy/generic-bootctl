@@ -117,6 +117,7 @@ pub fn run(
         install_plan(Path::new(args.get(2).map(String::as_str).unwrap_or("/")))?;
         return Ok(());
     }
+    #[cfg(feature = "vendor-probe")]
     if args.get(1).map(String::as_str) == Some("--vendor-probe") {
         generic_bootctl_backends::vendor::probe(Path::new(args.get(2).ok_or("missing library")?))?;
         return Ok(());
