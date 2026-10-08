@@ -223,7 +223,16 @@ pub fn discover(root: &Path) -> io::Result<Declaration> {
     }
     let mut declared = Declaration::default();
     for p in paths {
-        let d = manifest(&fs::read_to_string(p)?)?;
+        // A manifest fragment can be a link into a driver-created procfs entry that does not
+        // exist yet (Oplus: odm .../network_manifest.xml -> /proc/oplusManifest/...). An absent
+        // file declares nothing, so it must not keep the boot HAL from registering; every other
+        // read or parse failure stays fatal.
+        let text = match fs::read_to_string(&p) {
+            Ok(text) => text,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => continue,
+            Err(e) => return Err(e),
+        };
+        let d = manifest(&text)?;
         declared.aidl |= d.aidl;
         declared.hidl = declared.hidl.max(d.hidl);
     }
@@ -246,5 +255,22 @@ mod tests {
         assert_eq!(manifest(hidl).unwrap().hidl, Some(2));
         assert!(manifest("<manifest><hal></manifest>").is_err());
         assert!(manifest("<!DOCTYPE x><manifest/>").is_err());
+    }
+    #[test]
+    fn absent_manifest_fragment_does_not_hide_the_boot_declaration() {
+        let root = std::env::temp_dir().join(format!("vintf-absent-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let dir = root.join("odm/etc/vintf/manifest");
+        fs::create_dir_all(&dir).unwrap();
+        std::os::unix::fs::symlink("/nonexistent/network_manifest", dir.join("network_manifest.xml")).unwrap();
+        fs::write(
+            dir.join("boot.xml"),
+            "<manifest><hal format='aidl'><name>android.hardware.boot</name><fqname>IBootControl/default</fqname></hal></manifest>",
+        )
+        .unwrap();
+        assert!(discover(&root).unwrap().aidl);
+        fs::write(dir.join("bad.xml"), "<manifest><hal></manifest>").unwrap();
+        assert!(discover(&root).is_err(), "an unparsable fragment stays fatal");
+        fs::remove_dir_all(&root).unwrap();
     }
 }
