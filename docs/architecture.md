@@ -1,12 +1,16 @@
 # Architecture
 
-**Status (2026-10-07)** — Implemented, host/image-testable; not device-qualified.
+**Status (2026-10-08)** — Implemented, host/image-testable; not device-qualified.
 
-`bootctl-unified` parses manifests before registration, discovers the backend,
-constructs one `core::Service`, then registers AIDL V1/default and/or the highest
-declared HIDL 1.0–1.2/default. AIDL uses the NDK C ABI; HIDL uses raw hwbinder
-ioctls and scatter-gather parcels. The transports share one Arc/Mutex; the property
-gate is evaluated on every mutation. A transport failure exits the whole process.
+`bootctl-unified` discovers the backend, constructs one `core::Service`, then
+registers it without reading any VINTF manifest: the service managers already refuse
+a name the device does not declare. AIDL V1/default is tried first (what AOSP's
+`BootControlClient` prefers whenever it is declared); only if servicemanager refuses it
+are HIDL 1.2, 1.1 and 1.0/default tried against hwservicemanager. AIDL uses the NDK C
+ABI; HIDL uses raw hwbinder ioctls and scatter-gather parcels. The property gate is
+evaluated on every mutation. The runtime once parsed manifests itself and died with
+EACCES in an enforcing `hal_bootctl_default`, which may not read `system_file`
+(`/system/etc/vintf`); manifest parsing now only backs the `--install-plan` tooling.
 `crates/aidl` serializes replies and maps -1 INVALID_SLOT / -2 COMMAND_FAILED;
 `crates/hidl` maps these onto CommandResult/BoolResult without bypassing core.
 `crates/legacy` uses the identical service and translates these errors to errno.
@@ -14,11 +18,12 @@ Its Rust `HAL_MODULE_INFO_SYM` static is exported as **HMI**, exactly as hardwar
 requires. It does not export a second, nonstandard alias.
 
 `bootctl-unified` is a library plus a three-line binary. `bootctl_unified::run(factory)`
-owns argument handling, `--install-plan`, `--vendor-probe`, manifest discovery and every
-transport; `factory: FnOnce() -> io::Result<core::Service>` is the only consumer hook. The
-shipped binary passes `generic_bootctl_backends::service` (property-gated native backends).
-A consumer layers its own storage, write gate and `HealthOnSuccess` policy by building a
-different `Service` and calling `run`, so it never forks the transports or the installer.
+owns argument handling, `--install-plan` and `--vendor-probe`, then calls
+`bootctl_unified::serve(service)`; `factory: FnOnce() -> io::Result<core::Service>` is the
+only consumer hook. The shipped binary passes `generic_bootctl_backends::service`
+(property-gated native backends). A consumer layers its own storage, write gate and
+`HealthOnSuccess` policy by building a different `Service`, and builds `bootctl-unified`
+with `default-features = false` to leave the native backends out.
 
 `core::Backend: Send` has cached `slot_count(&self) -> u32`, a default no-op
 `prepare(&mut self)`, `read_state`, `commit(&State, Operation)`, `read_merge`,

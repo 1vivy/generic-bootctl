@@ -105,10 +105,9 @@ fn install_plan(root: &Path) -> io::Result<()> {
     }
     Ok(())
 }
-/// The unified boot-control process: `--install-plan`, `--vendor-probe`, or serve the
-/// transports the VINTF manifests declare over the service `factory` builds. A consumer
-/// supplies its own factory (backend, write gate, health policy); everything else, including
-/// manifest discovery and every transport, stays shared.
+/// The unified boot-control process: `--install-plan`, `--vendor-probe`, or [`serve`] the
+/// service `factory` builds. A consumer supplies its own factory (backend, write gate, health
+/// policy); the transports stay shared.
 pub fn run(
     factory: impl FnOnce() -> io::Result<generic_bootctl_core::Service>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -125,30 +124,31 @@ pub fn run(
     if args.len() != 1 {
         return Err("unexpected arguments".into());
     }
-    let declaration = vintf::discover(Path::new("/"))?;
+    serve(factory()?)
+}
+
+/// Register `IBootControl/default` and serve it; returns only on failure.
+///
+/// No manifest parsing: the service managers refuse a name the device does not declare. AIDL
+/// is tried first (it is what `BootControlClient` prefers whenever it is declared); only if
+/// servicemanager refuses it are HIDL 1.2, 1.1 and 1.0 tried against hwservicemanager.
+pub fn serve(service: generic_bootctl_core::Service) -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_os = "android")]
     {
-        let service = std::sync::Arc::new(std::sync::Mutex::new(factory()?));
-        if let Some(minor) = declaration.hidl {
-            if declaration.aidl {
-                let shared = std::sync::Arc::clone(&service);
-                std::thread::spawn(move || {
-                    if let Err(e) = generic_bootctl_hidl::run(shared, minor) {
-                        eprintln!("generic-bootctl: HIDL transport failed: {e}");
-                        std::process::exit(1);
-                    }
-                });
-            } else {
-                return generic_bootctl_hidl::run(service, minor).map_err(Into::into);
+        let service = std::sync::Arc::new(std::sync::Mutex::new(service));
+        if let Err(e) = generic_bootctl_aidl::run(std::sync::Arc::clone(&service)) {
+            eprintln!("generic-bootctl: AIDL not served ({e}); trying HIDL");
+        }
+        for minor in [2, 1, 0] {
+            if let Err(e) = generic_bootctl_hidl::run(std::sync::Arc::clone(&service), minor) {
+                eprintln!("generic-bootctl: HIDL 1.{minor} not served: {e}");
             }
         }
-        generic_bootctl_aidl::run(service).map_err(io::Error::other)?;
+        Err("no boot-control transport accepted the service".into())
     }
     #[cfg(not(target_os = "android"))]
     {
-        let _ = (declaration, factory);
+        let _ = service;
         Err("service transport requires Android".into())
     }
-    #[cfg(target_os = "android")]
-    Ok(())
 }
