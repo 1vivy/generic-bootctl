@@ -13,6 +13,13 @@ gate is evaluated on every mutation. A transport failure exits the whole process
 Its Rust `HAL_MODULE_INFO_SYM` static is exported as **HMI**, exactly as hardware.h
 requires. It does not export a second, nonstandard alias.
 
+`bootctl-unified` is a library plus a three-line binary. `bootctl_unified::run(factory)`
+owns argument handling, `--install-plan`, `--vendor-probe`, manifest discovery and every
+transport; `factory: FnOnce() -> io::Result<core::Service>` is the only consumer hook. The
+shipped binary passes `generic_bootctl_backends::service` (property-gated native backends).
+A consumer layers its own storage, write gate and `HealthOnSuccess` policy by building a
+different `Service` and calling `run`, so it never forks the transports or the installer.
+
 `core::Backend: Send` has cached `slot_count(&self) -> u32`, a default no-op
 `prepare(&mut self)`, `read_state`, `commit(&State, Operation)`, `read_merge`,
 and `write_merge`. State contains normalized slot metadata and native-policy
