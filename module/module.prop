@@ -1,0 +1,6 @@
+id=generic_bootctl
+name=Generic Boot Control
+version=0.1.0
+versionCode=1
+author=1vivy
+description=Manifest-discovered same-path boot HAL; read-only by default

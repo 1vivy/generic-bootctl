@@ -1,0 +1,17 @@
+Apache-2.0 upstream sources, unmodified contents. include_all headers materialized under include/hardware (upstream symlink destination).
+Sources: https://android.googlesource.com/platform/{hardware/interfaces,hardware/libhardware,bootable/recovery}
+
+path | revision | SHA-256
+third_party/aosp/hardware/interfaces/boot/aidl/aidl_api/android.hardware.boot/1/android/hardware/boot/IBootControl.aidl | 5688f7eb1e117ed26e642a695de300b7683acb87 | b94e0de5aa02b9733513311e018a0a89f4951d0b746c64ec8686d75b7491d70d
+third_party/aosp/hardware/interfaces/boot/aidl/aidl_api/android.hardware.boot/1/android/hardware/boot/MergeStatus.aidl | 5688f7eb1e117ed26e642a695de300b7683acb87 | 3ccb02d10ae3430e28b30f5b1248076917e20e3887ddcba7dd64be0e9e72ccdd
+third_party/aosp/hardware/interfaces/boot/aidl/aidl_api/android.hardware.boot/1/.hash | 5688f7eb1e117ed26e642a695de300b7683acb87 | 17258cacac6fc96af59ea9c14c17bcdfc2b76fc2b210bd804866b853fa78c065
+third_party/aosp/hardware/interfaces/boot/1.0/IBootControl.hal | 5688f7eb1e117ed26e642a695de300b7683acb87 | 7192d756aeba00aba32f4504981df8172ffca83e210c4838dabf295e53e93590
+third_party/aosp/hardware/interfaces/boot/1.0/types.hal | 5688f7eb1e117ed26e642a695de300b7683acb87 | cebaa803b8e33807a0d69f46652b650ccb549e8f9b19d6becbbf26690e828b49
+third_party/aosp/hardware/interfaces/boot/1.1/IBootControl.hal | 5688f7eb1e117ed26e642a695de300b7683acb87 | 07d0a252b2d8fa35887908a996ba395cf392968395fc30afab791f46e0c22a52
+third_party/aosp/hardware/interfaces/boot/1.1/types.hal | 5688f7eb1e117ed26e642a695de300b7683acb87 | 74049a402be913963edfdd80828a53736570e9d8124a1bf18166b6ed46a6b0ab
+third_party/aosp/hardware/interfaces/boot/1.2/IBootControl.hal | 5688f7eb1e117ed26e642a695de300b7683acb87 | 6763dd2273b1b47f3ac68af9b66870287eba33fb5b4d66e8fe1d30ae18ce24cb
+third_party/aosp/hardware/interfaces/boot/1.1/default/boot_control/libboot_control.cpp | 5688f7eb1e117ed26e642a695de300b7683acb87 | e510ae5faea5be121e827c92755319aad45186f8ffe6c55d88c7c9184ba0da46
+third_party/aosp/hardware/interfaces/boot/1.1/default/boot_control/include/private/boot_control_definition.h | 5688f7eb1e117ed26e642a695de300b7683acb87 | 2d786162e485786423d7c0bb7af094af9ff282a163e0b7d0eac1d0746a936103
+third_party/aosp/bootable/recovery/bootloader_message/include/bootloader_message/bootloader_message.h | 80fbea7e9af1dd883f2046e9b299d6fe45a0f693 | 4c863240e38fee249326985de7df302b141a4211682d2a2b5b236687ea81d55d
+third_party/aosp/hardware/libhardware/include/hardware/hardware.h | cd2b68d71a1dd9a45668ddd9a507000ccd7ff114 | 05cc2f0108d6c87e36384380559943d34acd104e3c2ade9aeba4415cfb23aee8
+third_party/aosp/hardware/libhardware/include/hardware/boot_control.h | cd2b68d71a1dd9a45668ddd9a507000ccd7ff114 | cc248fafa4e10f06dac98f51f0bc36c879c7ae40fa0cecddda9cf1ab1d2b84df

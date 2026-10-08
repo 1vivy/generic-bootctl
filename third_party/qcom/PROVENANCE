@@ -1,0 +1,8 @@
+LineageOS/android_hardware_qcom_bootctrl@846dfb0652cc142e1783cbe085783527bbe4a190
+Upstream: https://git.codelinaro.org/clo/la/platform/hardware/qcom/bootctrl
+Source references only; not compiled. See NOTICE for BSD license.
+gpt-utils/gpt-utils.h | a5eab055230ccf9ae3479890d09b917bf316b40cebd7494c35ff5c4e7fa17f67
+gpt-utils/recovery-ufs-bsg.h | e70d77a35fe0a841965d9339bb3d085a9451a8a668cb04d1549adb50db11220a
+gpt-utils/recovery-ufs-bsg.cpp | effc9aa4603c902dfb59629428d1d7a83e7449bf3a215a11b353f6ff1f3dfa1b
+1.1/libboot_control_qti/libboot_control_qti.cpp | 18c62d0cee634fc9874f3f2427fe57a7ddfc986305a7ad8c37be517ccd548909
+NOTICE | 7d0efddc00c65e357f59c0ae2d2de0c71501fc271660301dca4143d9a2d744a8

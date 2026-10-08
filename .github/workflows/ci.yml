@@ -1,0 +1,38 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-08-08
+          components: rustfmt, clippy
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - run: cargo test --locked
+      - run: cargo build --locked -p bootctl-unified
+      - run: python3 -m unittest discover -s tests
+      - run: shellcheck -s sh module/*.sh
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-08-08
+          targets: aarch64-linux-android,x86_64-linux-android
+      - name: Install NDK r29
+        run: |
+          curl --fail --location --retry 3 https://dl.google.com/android/repository/android-ndk-r29-linux.zip -o "$RUNNER_TEMP/ndk.zip"
+          unzip -q "$RUNNER_TEMP/ndk.zip" -d "$RUNNER_TEMP"
+          echo "ANDROID_NDK_HOME=$RUNNER_TEMP/android-ndk-r29" >> "$GITHUB_ENV"
+      - run: bash scripts/build.sh
+      - run: bash scripts/check-abi.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generic-bootctl
+          path: out/generic-bootctl-0.1.0.zip
