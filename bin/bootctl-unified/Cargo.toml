@@ -7,10 +7,11 @@ rust-version.workspace = true
 [lints]
 workspace = true
 [features]
-# The shipped module needs the native backends and the sandboxed vendor-library probe; a
-# consumer that supplies its own `Service` builds with `default-features = false`.
-default = ["vendor-probe"]
-vendor-probe = ["dep:generic-bootctl-backends"]
+# The library is serving only. The standalone module binary (its install plan, vendor probe
+# and native backends) needs `standalone`; a consumer linking only `serve` uses
+# `default-features = false`.
+default = ["standalone"]
+standalone = ["dep:generic-bootctl-backends"]
 [dependencies]
 generic-bootctl-core = { path = "../../crates/core" }
 generic-bootctl-aidl = { path = "../../crates/aidl" }
@@ -20,4 +21,4 @@ generic-bootctl-hidl = { path = "../../crates/hidl" }
 [[bin]]
 name = "bootctl-unified"
 path = "src/main.rs"
-required-features = ["vendor-probe"]
+required-features = ["standalone"]

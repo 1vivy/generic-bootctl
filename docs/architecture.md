@@ -17,13 +17,15 @@ EACCES in an enforcing `hal_bootctl_default`, which may not read `system_file`
 Its Rust `HAL_MODULE_INFO_SYM` static is exported as **HMI**, exactly as hardware.h
 requires. It does not export a second, nonstandard alias.
 
-`bootctl-unified` is a library plus a three-line binary. `bootctl_unified::run(factory)`
-owns argument handling, `--install-plan` and `--vendor-probe`, then calls
-`bootctl_unified::serve(service)`; `factory: FnOnce() -> io::Result<core::Service>` is the
-only consumer hook. The shipped binary passes `generic_bootctl_backends::service`
-(property-gated native backends). A consumer layers its own storage, write gate and
-`HealthOnSuccess` policy by building a different `Service`, and builds `bootctl-unified`
-with `default-features = false` to leave the native backends out.
+`bootctl-unified` is a serving-only library plus the standalone module's binary.
+`bootctl_unified::serve(service)` is the only library entry: it registers one
+`core::Service` and never decides how the stock HAL was replaced. Replacement is the
+consumer's payload method. The standalone module's own method, `--install-plan` (find
+the stock service and legacy libraries for a same-path overlay), `--vendor-probe` and
+serving `generic_bootctl_backends::service`, lives in the binary behind the default
+`standalone` feature. Another consumer (for example one that stops the stock service and
+starts its own) builds its own `Service` and links the library with
+`default-features = false`.
 
 `core::Backend: Send` has cached `slot_count(&self) -> u32`, a default no-op
 `prepare(&mut self)`, `read_state`, `commit(&State, Operation)`, `read_merge`,
