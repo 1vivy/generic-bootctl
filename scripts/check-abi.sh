@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-NDK=${ANDROID_NDK_HOME:-${GENERIC_BOOTCTL_NDK:-/home/vivy/Projects/efisp-projects/gobbl/out/toolchains/android-ndk-r29}}
+NDK="${ANDROID_NDK_ROOT:?set ANDROID_NDK_ROOT to an NDK r29 tree}"
 BIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT

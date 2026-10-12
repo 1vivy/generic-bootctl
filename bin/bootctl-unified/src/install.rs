@@ -1,5 +1,5 @@
-//! The standalone module's payload method: find the stock boot-HAL service and legacy
-//! libraries so the KernelSU installer can overlay the same paths. Serving never uses this;
+//! The standalone binary's payload method: find the stock boot-HAL service and legacy
+//! libraries so a loading module can overlay the same paths. Serving never uses this;
 //! a consumer with its own replacement method (for example stopping the stock service and
 //! starting its own) links only the library's `serve`.
 use crate::vintf;

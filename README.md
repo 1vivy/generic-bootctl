@@ -1,6 +1,6 @@
 # generic-bootctl
 
-**Status (2026-10-07)** — Rust KernelSU same-path boot-control HAL. AIDL frozen V1,
+**Status (2026-10-07)** — Rust boot-control HAL. AIDL frozen V1,
 raw hwbinder HIDL 1.0–1.2, LP64 legacy module ABI, AOSP misc, QTI UFS GPT, and
 sandboxed vendor parity are implemented. No device boot/OTA validation is claimed.
 
@@ -12,11 +12,11 @@ software, not a universal device compatibility promise.
 
 | Decision | Implemented choice | Reason |
 | --- | --- | --- |
-| Replacement | Original executable and discovered LP64 bootctrl libraries, same-path KernelSU overlay | Keep existing rc, VINTF, instance and domain |
+| Replacement | Original executable and discovered LP64 bootctrl libraries, overlaid at the same paths by the loading module | Keep existing rc, VINTF, instance and domain |
 | Binaries | One `bootctl-unified` executable per CPU ABI plus `bootctrl.module.so` | Different executable/module ABIs, one shared core |
 | Transport | Manifest-declared AIDL V1 and/or HIDL 1.0–1.2, default instance | No AIDL V2 exists; no undeclared registration |
 | Lifecycle | Non-lazy Binder and hwservicemanager registration | Avoid lazy/non-oneshot restart loops |
-| Own rc/manifest/policy | None; empty `sepolicy.rule` | No extra registration or permissive domain |
+| Own rc/manifest/policy | None | No extra registration or permissive domain |
 | Writes | Exact `persist.generic_bootctl.rw=1`, checked per mutation | Default read-only; no read-time initialization/repair |
 | Backend | Runtime metadata/controller discovery; reject ambiguity | No model-name allow-lists |
 
@@ -46,13 +46,12 @@ cargo test --locked
 cargo fmt --check
 cargo clippy --locked --workspace --all-targets -- -D warnings
 cargo build --locked -p bootctl-unified
-python3 -m unittest discover -s tests
-# ANDROID_NDK_HOME or GENERIC_BOOTCTL_NDK overrides the documented local default.
+# ANDROID_NDK_ROOT must name an Android NDK r29 tree.
 bash scripts/build.sh
 bash scripts/check-abi.sh
 ```
 
-The module zip is `out/generic-bootctl-0.1.0.zip`; it includes both architectures.
+`scripts/build.sh` writes one directory per Android architecture under `out/impl/`.
 `rust-toolchain.toml` pins nightly-2026-08-08. There are no crates.io dependencies,
 no platform AOSP build requirement, and no `.cargo/config.toml`. CI runs host
 contracts and cross-builds with the downloadable r29 NDK.
@@ -62,18 +61,17 @@ buffer fixups; no `libhidlbase` or `libhwbinder` is linked or bundled. In a mixe
 manifest both transports share one serialized `Service`, including its live
 write gate. See [wire contract and golden-byte derivation](docs/hidl-wire.md).
 
-## Installation and staged rollout
+## Staged rollout
 
-Install the zip through KernelSU. Its installer parses VINTF XML and init service
-stanzas, identifies the actual executable by interface declaration/content rather
-than a guessed filename, saves originals under `backup/`, and places overlays
-under `system/vendor`, `system/odm`, etc. `chcon --reference` must succeed. It
+`bootctl-unified --install-plan ROOT` is the same-path plan a loading module must
+apply: it parses VINTF XML and init service stanzas, identifies the actual
+executable by interface declaration/content rather than a guessed filename, and
 refuses absent/unsupported declarations, critical services, unmarked-successful
 current slots, pre-enabled writes, unsupported architecture, and ambiguous service
-ownership. `post-fs-data.sh` bounces only the discovered running non-lazy service.
-This deliberately fails closed rather than installing a partial replacement.
+ownership. Applying the plan deliberately fails closed rather than producing a
+partial replacement; this repository ships no installer, rc, manifest or policy.
 
-1. Set up recovery/KernelSU safe mode first. Install **read-only** only after the
+1. Set up recovery/safe mode first. Install **read-only** only after the
    current slot has been marked successful by the stock HAL.
 2. Compare stock and replacement slot count, current/active slot, suffix,
    bootability, success and merge state. Capture SELinux denials; successful label
@@ -93,16 +91,14 @@ can leave a partial update. There is no automatic rollback, repair, or retry tha
 could hide that state. See [backend guarantees](docs/backends.md).
 
 Read-only substitution is unsafe immediately after an OTA if the current slot is
-not successful: refusing success writes can exhaust retry counts. The installer
-checks this before creating any overlay/backup. Disabling writes after install
-also prevents future OTAs from completing their boot-control mutations.
+not successful: refusing success writes can exhaust retry counts. The install plan
+reports that state before any overlay or backup is created. Disabling writes after
+install also prevents future OTAs from completing their boot-control mutations.
 
-KernelSU volume-down safe mode disables modules. Recovery can create
-`/data/adb/modules/generic_bootctl/disable` or `remove`. Backups are retained inside
-the installed module for manual investigation. Uninstallation removes the
-overlay; reboot restores the stock executable. It never rewrites vendor partitions
+A module manager's volume-down safe mode disables modules; removing the overlay
+and rebooting restores the stock executable. It never rewrites vendor partitions
 and **does not undo boot metadata writes**. Do not assume a HAL crash is harmless:
-the installer refuses `critical` rc services rather than relying on that claim.
+the install plan refuses `critical` rc services rather than relying on that claim.
 
 ## Sources and license
 

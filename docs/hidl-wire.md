@@ -92,7 +92,7 @@ Unknown transaction codes, incorrect interface tokens, truncated scalar inputs,
 undeclared minor methods and incorrect oneway flags are rejected.
 
 Host golden contracts and dual-ABI builds do not establish runtime SELinux,
-hwservicemanager, reboot, OTA or bootloader correctness. The same-path installer
+hwservicemanager, reboot, OTA or bootloader correctness. The same-path install plan
 still refuses custom instances, unsupported versions/transports, manifest
 merging constructs it cannot resolve, ambiguous/critical init services and all
 other documented safety conditions.

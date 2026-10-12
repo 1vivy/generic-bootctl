@@ -67,9 +67,9 @@ and only when declared. HIDL inherits older minors in interfaceChain; its
 registration handles hwservicemanager's reentrant interfaceChain transaction.
 See [HIDL wire derivation](hidl-wire.md) for the driver and marshalling contracts.
 
-Installer discovery is exposed as `--install-plan ROOT` for host fake-root tests.
+Install-plan discovery is exposed as `--install-plan ROOT` for host fake-root tests.
 It reads the service stanza associated with the boot interface, not the first
 service in an rc file. Binary content can associate stock rc files lacking an
-`interface` line. Multiple matches or command arguments are refused. The installer
-uses the stock bootctl only before installing any overlay. No own rc or manifest
-is shipped. KernelSU magic-mount layout puts separate partitions under system/.
+`interface` line. Multiple matches or command arguments are refused. The plan is
+computed against the stock bootctl before any overlay exists. No own rc or manifest
+is shipped. The module magic-mount layout puts separate partitions under system/.
