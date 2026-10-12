@@ -262,7 +262,11 @@ mod tests {
         let _ = fs::remove_dir_all(&root);
         let dir = root.join("odm/etc/vintf/manifest");
         fs::create_dir_all(&dir).unwrap();
-        std::os::unix::fs::symlink("/nonexistent/network_manifest", dir.join("network_manifest.xml")).unwrap();
+        std::os::unix::fs::symlink(
+            "/nonexistent/network_manifest",
+            dir.join("network_manifest.xml"),
+        )
+        .unwrap();
         fs::write(
             dir.join("boot.xml"),
             "<manifest><hal format='aidl'><name>android.hardware.boot</name><fqname>IBootControl/default</fqname></hal></manifest>",
@@ -270,7 +274,10 @@ mod tests {
         .unwrap();
         assert!(discover(&root).unwrap().aidl);
         fs::write(dir.join("bad.xml"), "<manifest><hal></manifest>").unwrap();
-        assert!(discover(&root).is_err(), "an unparsable fragment stays fatal");
+        assert!(
+            discover(&root).is_err(),
+            "an unparsable fragment stays fatal"
+        );
         fs::remove_dir_all(&root).unwrap();
     }
 }
