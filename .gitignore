@@ -1,5 +1,7 @@
 /.worktrees/
-/target/
+# Build output: Cargo target tree (out/target) and staged artifacts (out/impl).
 /out/
+# Safety net for a Cargo invocation that does not set CARGO_TARGET_DIR.
+/target/
 __pycache__/
 *.pyc

@@ -40,21 +40,42 @@ run without confinement on kernels lacking Landlock.
 
 ## Build and host gates
 
+Use a Linux x86_64 host with Rustup and Android NDK r29.
+Run these commands from the repository root.
+Set `ANDROID_NDK_ROOT` to the NDK directory before you build.
+The example uses the shared workspace toolchain without a symlink.
+
 ```sh
 export PATH="$HOME/.cargo/bin:$PATH"
-cargo test --locked
-cargo fmt --check
-cargo clippy --locked --workspace --all-targets -- -D warnings
-cargo build --locked -p bootctl-unified
-# ANDROID_NDK_ROOT must name an Android NDK r29 tree.
+export ANDROID_NDK_ROOT="$(realpath ../../../toolchains/android-ndk-r29)"
+rustup show
 bash scripts/build.sh
 bash scripts/check-abi.sh
 ```
 
-`scripts/build.sh` writes one directory per Android architecture under `out/impl/`.
-`rust-toolchain.toml` pins nightly-2026-08-08. There are no crates.io dependencies,
-no platform AOSP build requirement, and no `.cargo/config.toml`. CI runs host
-contracts and cross-builds with the downloadable r29 NDK.
+For a clone outside this workspace, set `ANDROID_NDK_ROOT` to your NDK r29 installation.
+`rust-toolchain.toml` pins nightly-2026-08-08 and both Android targets.
+`rustup show` installs the declared toolchain and components when they are absent.
+The build requires no crates.io dependencies, AOSP build tree, or `.cargo/config.toml`.
+
+`scripts/build.sh` sets `CARGO_TARGET_DIR` to the repository's `out/target/`.
+It stages the executable and legacy module for each Android architecture under `out/impl/`.
+The repository ignores `out/`.
+The ABI check reads the compiled libraries from `out/target/`.
+Neither script requires another repository's source tree or build output.
+
+Use these commands for the host checks.
+The explicit target directory keeps host output under `out/`.
+
+```sh
+export CARGO_TARGET_DIR="$PWD/out/target"
+cargo test --locked
+cargo fmt --check
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo build --locked -p bootctl-unified
+```
+
+CI runs host contracts and Android builds with NDK r29.
 
 HIDL uses the kernel Binder LP64 ABI directly, with AOSP scatter-gather parcel
 buffer fixups; no `libhidlbase` or `libhwbinder` is linked or bundled. In a mixed

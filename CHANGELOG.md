@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Place Android compilation output under `out/target/` and retain staging under `out/impl/`.
+- Update the ABI check and build instructions for the output layout and shared NDK r29.
+
 ## 0.1.0 — 2026-10-07
 
 - Split generic Rust core, frozen AIDL V1, LP64 legacy ABI and native backends.

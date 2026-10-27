@@ -27,5 +27,5 @@ _Static_assert(offsetof(boot_control_module_t,reserved)==328,"reserved");
 PY
 for ARCH in aarch64 x86_64; do
   "$BIN/$ARCH-linux-android35-clang" -Wall -Werror -I "$TMP" -c "$TMP/abi.c" -o "$TMP/$ARCH.o"
-  "$BIN/llvm-readelf" --dyn-syms "$ROOT/target/$ARCH-linux-android/release/libgeneric_bootctl_legacy.so" | grep -E 'GLOBAL +DEFAULT +[0-9]+ +HMI$'
+  "$BIN/llvm-readelf" --dyn-syms "$ROOT/out/target/$ARCH-linux-android/release/libgeneric_bootctl_legacy.so" | grep -E 'GLOBAL +DEFAULT +[0-9]+ +HMI$'
 done
