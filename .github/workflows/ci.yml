@@ -24,8 +24,12 @@ jobs:
           toolchain: nightly-2026-08-08
           targets: aarch64-linux-android,x86_64-linux-android
       - name: Install NDK r29
+        # Google lists this archive at 783549481 bytes with SHA-1
+        # 87e2bb7e9be5d6a1c6cdf5ec40dd4e0c6d07c30b (android/ndk wiki, Unsupported Downloads).
+        # The SHA-256 below is of that same archive.
         run: |
           curl --fail --location --retry 3 https://dl.google.com/android/repository/android-ndk-r29-linux.zip -o "$RUNNER_TEMP/ndk.zip"
+          echo "4abbbcdc842f3d4879206e9695d52709603e52dd68d3c1fff04b3b5e7a308ecf  $RUNNER_TEMP/ndk.zip" | sha256sum --check --strict
           unzip -q "$RUNNER_TEMP/ndk.zip" -d "$RUNNER_TEMP"
           echo "ANDROID_NDK_ROOT=$RUNNER_TEMP/android-ndk-r29" >> "$GITHUB_ENV"
       - run: bash scripts/build.sh
