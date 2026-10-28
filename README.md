@@ -1,5 +1,12 @@
 # generic-bootctl
 
+> **Retired 2026-10-27.** This repository is archived and is reference only. The
+> version-extensible AIDL/HIDL serving layer now lives in the `bootctl-serve`
+> crate of `1vivy/maos-hals`, and its `PROVENANCE` file records the source
+> revision and the file mapping. The AOSP misc, QTI UFS GPT and
+> vendor-passthrough backends, the `bootctl-unified` module and the LP64 legacy
+> module had no consumer, so they were not carried.
+
 **Status (2026-10-07)** — Rust boot-control HAL. AIDL frozen V1,
 raw hwbinder HIDL 1.0–1.2, LP64 legacy module ABI, AOSP misc, QTI UFS GPT, and
 sandboxed vendor parity are implemented. No device boot/OTA validation is claimed.
